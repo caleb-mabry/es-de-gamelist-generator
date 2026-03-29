@@ -2,29 +2,38 @@
 
 Generates `gamelist.xml` files for [ES-DE](https://es-de.org/) from a directory of ROMs.
 
-## Requirements
+## Shell Script (no dependencies — works on Steam Deck)
 
-- Python 3.10+
-- [Poetry](https://python-poetry.org/)
+```bash
+chmod +x gamelist-gen.sh
+./gamelist-gen.sh <input_path> <output_path>
+```
 
-## Installation
+**Example:**
+
+```bash
+./gamelist-gen.sh /run/media/mmcblk0p1/ROMs /home/deck/.emulationstation/gamelists
+```
+
+**Run tests:**
+
+```bash
+bash tests/test_gamelist_gen.sh
+```
+
+## Python (requires Python 3.10+ and Poetry)
+
+### Installation
 
 ```bash
 poetry install
 ```
 
-## Usage
+### Usage
 
 ```bash
 poetry run gamelist-gen <input_path> <output_path>
 ```
-
-**Arguments:**
-
-| Argument | Description |
-|---|---|
-| `input` | Path to your ROMs directory (contains one subfolder per system) |
-| `output` | Path to your ES-DE `gamelists` directory |
 
 **Example:**
 
@@ -32,10 +41,18 @@ poetry run gamelist-gen <input_path> <output_path>
 poetry run gamelist-gen /mnt/nas/roms/ROMs /Es-De/gamelists
 ```
 
-This will scan each system subfolder (e.g. `/mnt/nas/roms/ROMs/gb`, `/mnt/nas/roms/ROMs/dreamcast`) and create:
+**Run tests:**
+
+```bash
+poetry run pytest
+```
+
+---
+
+Both options scan each system subfolder (e.g. `ROMs/gb`, `ROMs/dreamcast`) and create:
 
 ```
-/Es-De/gamelists/
+gamelists/
   gb/
     gamelist.xml
   dreamcast/
