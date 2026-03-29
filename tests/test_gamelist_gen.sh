@@ -139,6 +139,16 @@ assert_contains     "$TMP/t10/out/gb/gamelist.xml" "<name>SONIC_1</name>" "--inc
 assert_contains     "$TMP/t10/out/gb/gamelist.xml" "<name>Sonic_2</name>" "--include-word is case insensitive (mixed filename)"
 assert_not_contains "$TMP/t10/out/gb/gamelist.xml" "<name>Tetris</name>"  "--include-word excludes non-matching"
 
+# --- test: multiple --include-word flags use OR logic ---
+mkdir -p "$TMP/t10b/roms/gb"
+touch "$TMP/t10b/roms/gb/Sonic (US).zip"
+touch "$TMP/t10b/roms/gb/Kirby (USA).zip"
+touch "$TMP/t10b/roms/gb/Tetris (Japan).zip"
+bash "$SCRIPT" "$TMP/t10b/roms" "$TMP/t10b/out" --include-word US --include-word USA
+assert_contains     "$TMP/t10b/out/gb/gamelist.xml" "Sonic (US)"      "multiple --include-word: matches first word"
+assert_contains     "$TMP/t10b/out/gb/gamelist.xml" "Kirby (USA)"     "multiple --include-word: matches second word"
+assert_not_contains "$TMP/t10b/out/gb/gamelist.xml" "Tetris (Japan)"  "multiple --include-word: excludes non-matching"
+
 # --- test: --include-word with no matches produces empty gameList ---
 mkdir -p "$TMP/t11/roms/gb"
 touch "$TMP/t11/roms/gb/Tetris.zip"

@@ -156,7 +156,7 @@ def test_main_no_system_subdirs(tmp_path, capsys):
 # include_word filtering
 # ---------------------------------------------------------------------------
 
-def test_include_word_filters_matching_files(tmp_path):
+def test_include_words_filters_matching_files(tmp_path):
     rom_dir = tmp_path / "dreamcast"
     rom_dir.mkdir()
     (rom_dir / "Sonic Adventure.zip").touch()
@@ -164,14 +164,14 @@ def test_include_word_filters_matching_files(tmp_path):
     (rom_dir / "systeminfo.txt").touch()
 
     output_dir = tmp_path / "out" / "dreamcast"
-    generate_gamelist(rom_dir, output_dir, include_word="sonic")
+    generate_gamelist(rom_dir, output_dir, include_words=["sonic"])
 
     tree = ET.parse(output_dir / "gamelist.xml")
     names = [g.find("name").text for g in tree.getroot().findall("game")]
     assert names == ["Sonic Adventure"]
 
 
-def test_include_word_is_case_insensitive(tmp_path):
+def test_include_words_is_case_insensitive(tmp_path):
     rom_dir = tmp_path / "gb"
     rom_dir.mkdir()
     (rom_dir / "SONIC_1.zip").touch()
@@ -179,7 +179,7 @@ def test_include_word_is_case_insensitive(tmp_path):
     (rom_dir / "Tetris.zip").touch()
 
     output_dir = tmp_path / "out" / "gb"
-    generate_gamelist(rom_dir, output_dir, include_word="SONIC")
+    generate_gamelist(rom_dir, output_dir, include_words=["SONIC"])
 
     tree = ET.parse(output_dir / "gamelist.xml")
     names = [g.find("name").text for g in tree.getroot().findall("game")]
@@ -188,29 +188,46 @@ def test_include_word_is_case_insensitive(tmp_path):
     assert "Tetris" not in names
 
 
-def test_include_word_none_includes_all(tmp_path):
+def test_include_words_none_includes_all(tmp_path):
     rom_dir = tmp_path / "gb"
     rom_dir.mkdir()
     (rom_dir / "Tetris.zip").touch()
     (rom_dir / "Kirby.zip").touch()
 
     output_dir = tmp_path / "out" / "gb"
-    generate_gamelist(rom_dir, output_dir, include_word=None)
+    generate_gamelist(rom_dir, output_dir, include_words=None)
 
     tree = ET.parse(output_dir / "gamelist.xml")
     assert len(tree.getroot().findall("game")) == 2
 
 
-def test_include_word_no_matches_produces_empty_gamelist(tmp_path):
+def test_include_words_no_matches_produces_empty_gamelist(tmp_path):
     rom_dir = tmp_path / "gb"
     rom_dir.mkdir()
     (rom_dir / "Tetris.zip").touch()
 
     output_dir = tmp_path / "out" / "gb"
-    generate_gamelist(rom_dir, output_dir, include_word="zelda")
+    generate_gamelist(rom_dir, output_dir, include_words=["zelda"])
 
     tree = ET.parse(output_dir / "gamelist.xml")
     assert tree.getroot().findall("game") == []
+
+
+def test_include_words_multiple_words_or_logic(tmp_path):
+    rom_dir = tmp_path / "gb"
+    rom_dir.mkdir()
+    (rom_dir / "Sonic (US).zip").touch()
+    (rom_dir / "Kirby (USA).zip").touch()
+    (rom_dir / "Tetris (Japan).zip").touch()
+
+    output_dir = tmp_path / "out" / "gb"
+    generate_gamelist(rom_dir, output_dir, include_words=["US", "USA"])
+
+    tree = ET.parse(output_dir / "gamelist.xml")
+    names = [g.find("name").text for g in tree.getroot().findall("game")]
+    assert "Sonic (US)" in names
+    assert "Kirby (USA)" in names
+    assert "Tetris (Japan)" not in names
 
 
 def test_main_include_word_flag(tmp_path):
@@ -226,3 +243,21 @@ def test_main_include_word_flag(tmp_path):
     tree = ET.parse(tmp_path / "out" / "gb" / "gamelist.xml")
     names = [g.find("name").text for g in tree.getroot().findall("game")]
     assert names == ["Sonic"]
+
+
+def test_main_multiple_include_word_flags(tmp_path):
+    roms = tmp_path / "roms"
+    (roms / "gb").mkdir(parents=True)
+    (roms / "gb" / "Sonic (US).zip").touch()
+    (roms / "gb" / "Kirby (USA).zip").touch()
+    (roms / "gb" / "Tetris (Japan).zip").touch()
+
+    import sys
+    sys.argv = ["gamelist-gen", str(roms), str(tmp_path / "out"), "--include-word", "US", "--include-word", "USA"]
+    main()
+
+    tree = ET.parse(tmp_path / "out" / "gb" / "gamelist.xml")
+    names = [g.find("name").text for g in tree.getroot().findall("game")]
+    assert "Sonic (US)" in names
+    assert "Kirby (USA)" in names
+    assert "Tetris (Japan)" not in names

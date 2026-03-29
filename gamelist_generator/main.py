@@ -4,13 +4,13 @@ from pathlib import Path
 from xml.dom import minidom
 
 
-def generate_gamelist(rom_dir: Path, output_dir: Path, include_word: str | None = None) -> None:
+def generate_gamelist(rom_dir: Path, output_dir: Path, include_words: list[str] | None = None) -> None:
     root = ET.Element("gameList")
 
     for rom_file in sorted(rom_dir.iterdir()):
         if not rom_file.is_file():
             continue
-        if include_word and include_word.lower() not in rom_file.name.lower():
+        if include_words and not any(w.lower() in rom_file.name.lower() for w in include_words):
             continue
         game = ET.SubElement(root, "game")
         ET.SubElement(game, "path").text = f"./{rom_file.name}"
@@ -32,7 +32,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate ES-DE gamelist.xml files from ROM directories")
     parser.add_argument("input", help="Path to the ROMs directory (contains subfolders per system)")
     parser.add_argument("output", help="Path to the ES-DE gamelists directory")
-    parser.add_argument("--include-word", help="Only include files whose name contains this word (case insensitive)")
+    parser.add_argument("--include-word", action="append", dest="include_words", metavar="WORD",
+                        help="Only include files whose name contains WORD (case insensitive). Can be specified multiple times.")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -48,7 +49,7 @@ def main() -> None:
         return
 
     for system_dir in system_dirs:
-        generate_gamelist(system_dir, output_path / system_dir.name, args.include_word)
+        generate_gamelist(system_dir, output_path / system_dir.name, args.include_words)
 
 
 if __name__ == "__main__":
