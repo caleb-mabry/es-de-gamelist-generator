@@ -30,14 +30,14 @@ for system_dir in "$INPUT"/*/; do
 
     {
         echo "<gameList>"
-        for rom_file in $(ls "$system_dir" | sort); do
+        while IFS= read -r rom_file; do
             [[ ! -f "$system_dir/$rom_file" ]] && continue
             name="${rom_file%.*}"
             echo "  <game>"
             echo "    <path>./$rom_file</path>"
             echo "    <name>$name</name>"
             echo "  </game>"
-        done
+        done < <(ls "$system_dir" | sort)
         echo "</gameList>"
     } > "$out_dir/gamelist.xml"
 

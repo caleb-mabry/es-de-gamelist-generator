@@ -38,6 +38,7 @@ assert_not_contains() {
 # ---------------------------------------------------------------------------
 
 TMP=$(mktemp -d)
+
 trap 'rm -rf "$TMP"' EXIT
 
 # --- test: generates gamelist.xml for a system ---
@@ -107,6 +108,16 @@ if echo "$output" | grep -q "No system subdirectories found"; then
 else
     fail "prints message when no system subdirs"
 fi
+
+# --- test: filenames with spaces are handled correctly ---
+mkdir -p "$TMP/t8/roms/dreamcast"
+touch "$TMP/t8/roms/dreamcast/Sonic Adventure.zip"
+touch "$TMP/t8/roms/dreamcast/Crazy Taxi.zip"
+touch "$TMP/t8/roms/dreamcast/systeminfo.txt"
+bash "$SCRIPT" "$TMP/t8/roms" "$TMP/t8/out"
+assert_contains "$TMP/t8/out/dreamcast/gamelist.xml" "<name>Sonic Adventure</name>" "filename with spaces is included"
+assert_contains "$TMP/t8/out/dreamcast/gamelist.xml" "<name>Crazy Taxi</name>"     "second filename with spaces is included"
+assert_contains "$TMP/t8/out/dreamcast/gamelist.xml" "<path>./Sonic Adventure.zip</path>" "path preserves spaces"
 
 # ---------------------------------------------------------------------------
 
