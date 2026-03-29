@@ -119,6 +119,44 @@ assert_contains "$TMP/t8/out/dreamcast/gamelist.xml" "<name>Sonic Adventure</nam
 assert_contains "$TMP/t8/out/dreamcast/gamelist.xml" "<name>Crazy Taxi</name>"     "second filename with spaces is included"
 assert_contains "$TMP/t8/out/dreamcast/gamelist.xml" "<path>./Sonic Adventure.zip</path>" "path preserves spaces"
 
+# --- test: --include-word filters matching files ---
+mkdir -p "$TMP/t9/roms/dreamcast"
+touch "$TMP/t9/roms/dreamcast/Sonic Adventure.zip"
+touch "$TMP/t9/roms/dreamcast/Crazy Taxi.zip"
+touch "$TMP/t9/roms/dreamcast/systeminfo.txt"
+bash "$SCRIPT" "$TMP/t9/roms" "$TMP/t9/out" --include-word sonic
+assert_contains     "$TMP/t9/out/dreamcast/gamelist.xml" "<name>Sonic Adventure</name>" "--include-word includes matching file"
+assert_not_contains "$TMP/t9/out/dreamcast/gamelist.xml" "<name>Crazy Taxi</name>"      "--include-word excludes non-matching file"
+assert_not_contains "$TMP/t9/out/dreamcast/gamelist.xml" "<name>systeminfo</name>"      "--include-word excludes non-matching file 2"
+
+# --- test: --include-word is case insensitive ---
+mkdir -p "$TMP/t10/roms/gb"
+touch "$TMP/t10/roms/gb/SONIC_1.zip"
+touch "$TMP/t10/roms/gb/Sonic_2.zip"
+touch "$TMP/t10/roms/gb/Tetris.zip"
+bash "$SCRIPT" "$TMP/t10/roms" "$TMP/t10/out" --include-word SONIC
+assert_contains     "$TMP/t10/out/gb/gamelist.xml" "<name>SONIC_1</name>" "--include-word is case insensitive (upper input)"
+assert_contains     "$TMP/t10/out/gb/gamelist.xml" "<name>Sonic_2</name>" "--include-word is case insensitive (mixed filename)"
+assert_not_contains "$TMP/t10/out/gb/gamelist.xml" "<name>Tetris</name>"  "--include-word excludes non-matching"
+
+# --- test: --include-word with no matches produces empty gameList ---
+mkdir -p "$TMP/t11/roms/gb"
+touch "$TMP/t11/roms/gb/Tetris.zip"
+bash "$SCRIPT" "$TMP/t11/roms" "$TMP/t11/out" --include-word zelda
+assert_not_contains "$TMP/t11/out/gb/gamelist.xml" "<game>" "--include-word no matches gives empty gameList"
+
+# --- test: overwrite on re-run (does not append) ---
+mkdir -p "$TMP/t12/roms/gb"
+touch "$TMP/t12/roms/gb/Tetris.zip"
+bash "$SCRIPT" "$TMP/t12/roms" "$TMP/t12/out"
+bash "$SCRIPT" "$TMP/t12/roms" "$TMP/t12/out"
+count=$(grep -c "<game>" "$TMP/t12/out/gb/gamelist.xml")
+if [[ $count -eq 1 ]]; then
+    pass "re-running overwrites file, does not append"
+else
+    fail "re-running overwrites file, does not append (found $count <game> entries)"
+fi
+
 # ---------------------------------------------------------------------------
 
 echo ""

@@ -150,3 +150,79 @@ def test_main_no_system_subdirs(tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert "No system subdirectories found" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# include_word filtering
+# ---------------------------------------------------------------------------
+
+def test_include_word_filters_matching_files(tmp_path):
+    rom_dir = tmp_path / "dreamcast"
+    rom_dir.mkdir()
+    (rom_dir / "Sonic Adventure.zip").touch()
+    (rom_dir / "Crazy Taxi.zip").touch()
+    (rom_dir / "systeminfo.txt").touch()
+
+    output_dir = tmp_path / "out" / "dreamcast"
+    generate_gamelist(rom_dir, output_dir, include_word="sonic")
+
+    tree = ET.parse(output_dir / "gamelist.xml")
+    names = [g.find("name").text for g in tree.getroot().findall("game")]
+    assert names == ["Sonic Adventure"]
+
+
+def test_include_word_is_case_insensitive(tmp_path):
+    rom_dir = tmp_path / "gb"
+    rom_dir.mkdir()
+    (rom_dir / "SONIC_1.zip").touch()
+    (rom_dir / "Sonic_2.zip").touch()
+    (rom_dir / "Tetris.zip").touch()
+
+    output_dir = tmp_path / "out" / "gb"
+    generate_gamelist(rom_dir, output_dir, include_word="SONIC")
+
+    tree = ET.parse(output_dir / "gamelist.xml")
+    names = [g.find("name").text for g in tree.getroot().findall("game")]
+    assert "SONIC_1" in names
+    assert "Sonic_2" in names
+    assert "Tetris" not in names
+
+
+def test_include_word_none_includes_all(tmp_path):
+    rom_dir = tmp_path / "gb"
+    rom_dir.mkdir()
+    (rom_dir / "Tetris.zip").touch()
+    (rom_dir / "Kirby.zip").touch()
+
+    output_dir = tmp_path / "out" / "gb"
+    generate_gamelist(rom_dir, output_dir, include_word=None)
+
+    tree = ET.parse(output_dir / "gamelist.xml")
+    assert len(tree.getroot().findall("game")) == 2
+
+
+def test_include_word_no_matches_produces_empty_gamelist(tmp_path):
+    rom_dir = tmp_path / "gb"
+    rom_dir.mkdir()
+    (rom_dir / "Tetris.zip").touch()
+
+    output_dir = tmp_path / "out" / "gb"
+    generate_gamelist(rom_dir, output_dir, include_word="zelda")
+
+    tree = ET.parse(output_dir / "gamelist.xml")
+    assert tree.getroot().findall("game") == []
+
+
+def test_main_include_word_flag(tmp_path):
+    roms = tmp_path / "roms"
+    (roms / "gb").mkdir(parents=True)
+    (roms / "gb" / "Sonic.zip").touch()
+    (roms / "gb" / "Tetris.zip").touch()
+
+    import sys
+    sys.argv = ["gamelist-gen", str(roms), str(tmp_path / "out"), "--include-word", "sonic"]
+    main()
+
+    tree = ET.parse(tmp_path / "out" / "gb" / "gamelist.xml")
+    names = [g.find("name").text for g in tree.getroot().findall("game")]
+    assert names == ["Sonic"]

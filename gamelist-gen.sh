@@ -2,17 +2,31 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: $0 <input_path> <output_path>"
+    echo "Usage: $0 <input_path> <output_path> [--include-word WORD]"
     echo ""
-    echo "  input_path   ROMs directory containing one subfolder per system"
-    echo "  output_path  ES-DE gamelists directory"
+    echo "  input_path     ROMs directory containing one subfolder per system"
+    echo "  output_path    ES-DE gamelists directory"
+    echo "  --include-word Only include files whose name contains WORD (case insensitive)"
     exit 1
 }
 
-[[ $# -ne 2 ]] && usage
+[[ $# -lt 2 ]] && usage
 
 INPUT="$1"
 OUTPUT="$2"
+INCLUDE_WORD=""
+
+shift 2
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --include-word)
+            [[ $# -lt 2 ]] && { echo "Error: --include-word requires a value"; exit 1; }
+            INCLUDE_WORD="$2"
+            shift 2
+            ;;
+        *) echo "Unknown argument: $1"; usage ;;
+    esac
+done
 
 if [[ ! -d "$INPUT" ]]; then
     echo "Error: input path does not exist or is not a directory: $INPUT"
@@ -32,6 +46,9 @@ for system_dir in "$INPUT"/*/; do
         echo "<gameList>"
         while IFS= read -r rom_file; do
             [[ ! -f "$system_dir/$rom_file" ]] && continue
+            if [[ -n "$INCLUDE_WORD" ]]; then
+                echo "$rom_file" | grep -qi "$INCLUDE_WORD" || continue
+            fi
             name="${rom_file%.*}"
             echo "  <game>"
             echo "    <path>./$rom_file</path>"
